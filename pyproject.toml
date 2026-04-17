@@ -20,47 +20,43 @@ requires-python = ">=3.10"
 # run 'uv sync --extra dev' to install the dev tools (ruff, pytest, ipykernel) flagged as optional
 
 dependencies = [
-
-    #  DATA HANDLING 
-    "pandas>=2.0",           # core tabular data library — like Excel but in Python
-    "numpy>=1.26",           # fast numerical arrays — used under the hood by everything
-    "geopandas>=0.14",       # pandas for geographic/spatial data (points, polygons, shapes)
-    "shapely>=2.0",          # creates and manipulates geometric objects (points, lines, polygons)
-    "pyproj>=3.6",           # handles coordinate reference systems so maps align correctly
-    "fiona>=1.9",            # reads/writes vector spatial files (.shp, .geojson, .gpkg)
-    "pyarrow>=14.0",         # fast columnar storage format (Parquet) for large datasets
-
-    #  VISUALIZATION 
-    "matplotlib>=3.8",       # the foundation of all Python plotting
-    "seaborn>=0.13",         # statistical plots built on matplotlib — prettier defaults
-    "plotly>=5.18",          # interactive charts and maps you can zoom and hover over
-    "folium>=0.15",          # creates Leaflet.js interactive web maps
-    "contextily>=1.5",       # adds basemap tiles (satellite/street) behind your maps
-
-    #  SPATIAL ANALYSIS 
-    "scipy>=1.11",           # scientific computing: spatial stats, clustering, distance
-    "libpysal>=4.9",         # spatial statistics: Moran's I, spatial weights matrices
-    "esda>=2.5",             # Exploratory Spatial Data Analysis built on libpysal
-    "h3>=3.7",               # Uber's hexagonal grid system — for our hexagonal fishnet layer
-    "rasterio>=1.3",         # reads raster data: terrain grids, satellite images (GeoTIFF)
-    "rasterstats>=0.19",     # calculates statistics of rasters within polygon zones
-    "osmnx>=1.7",            # downloads OpenStreetMap road networks directly into Python
-
-    #  MACHINE LEARNING 
-    "scikit-learn>=1.4",     # the standard ML library: Random Forest, clustering, preprocessing
-    "xgboost>=2.0",          # gradient boosting — often outperforms Random Forest on tabular data
-    "hmmlearn>=0.3",         # Hidden Markov Models — our PRIMARY method recommended by World Bank
-
-    #  NLP (for ACLED event notes text analysis) 
-    "nltk>=3.8",             # Natural Language Toolkit: tokenization, stopwords, basic NLP
-    "spacy>=3.7",            # industrial-strength NLP — faster and more powerful than nltk
-
-    #  UTILITIES 
-    "jupyterlab>=4.0",       # modern interface for Jupyter notebooks — our exploration environment
-    "requests>=2.31",        # makes HTTP requests — used to download data from APIs
-    "tqdm>=4.66",            # progress bars — shows how long loops are taking
-    "python-dotenv>=1.0",    # loads secret API keys from a .env file safely
-    "openpyxl>=3.1",         # reads/writes Excel files — for validation spreadsheets
+    #  DATA HANDLING
+    "pandas>=2.0", # core tabular data library — like Excel but in Python
+    "numpy>=1.26", # fast numerical arrays — used under the hood by everything
+    "geopandas>=0.14", # pandas for geographic/spatial data (points, polygons, shapes)
+    "shapely>=2.0", # creates and manipulates geometric objects (points, lines, polygons)
+    "pyproj>=3.6", # handles coordinate reference systems so maps align correctly
+    "fiona>=1.9", # reads/writes vector spatial files (.shp, .geojson, .gpkg)
+    "pyarrow>=14.0", # fast columnar storage format (Parquet) for large datasets
+    #  VISUALIZATION
+    "matplotlib>=3.8", # the foundation of all Python plotting
+    "seaborn>=0.13", # statistical plots built on matplotlib — prettier defaults
+    "plotly>=5.18", # interactive charts and maps you can zoom and hover over
+    "folium>=0.15", # creates Leaflet.js interactive web maps
+    "contextily>=1.5", # adds basemap tiles (satellite/street) behind your maps
+    #  SPATIAL ANALYSIS
+    "scipy>=1.11", # scientific computing: spatial stats, clustering, distance
+    "libpysal>=4.9", # spatial statistics: Moran's I, spatial weights matrices
+    "esda>=2.5", # Exploratory Spatial Data Analysis built on libpysal
+    "h3>=3.7", # Uber's hexagonal grid system — for our hexagonal fishnet layer
+    "rasterio>=1.3", # reads raster data: terrain grids, satellite images (GeoTIFF)
+    "rasterstats>=0.19", # calculates statistics of rasters within polygon zones
+    "osmnx>=1.7", # downloads OpenStreetMap road networks directly into Python
+    #  MACHINE LEARNING
+    "scikit-learn>=1.4", # the standard ML library: Random Forest, clustering, preprocessing
+    "xgboost>=2.0", # gradient boosting — often outperforms Random Forest on tabular data
+    "hmmlearn>=0.3", # Hidden Markov Models — our PRIMARY method recommended by World Bank
+    #  NLP (for ACLED event notes text analysis)
+    "nltk>=3.8", # Natural Language Toolkit: tokenization, stopwords, basic NLP
+    "spacy>=3.7", # industrial-strength NLP — faster and more powerful than nltk
+    #  UTILITIES
+    "jupyterlab>=4.0", # modern interface for Jupyter notebooks — our exploration environment
+    "requests>=2.31", # makes HTTP requests — used to download data from APIs
+    "tqdm>=4.66", # progress bars — shows how long loops are taking
+    "python-dotenv>=1.0", # loads secret API keys from a .env file safely
+    "openpyxl>=3.1", # reads/writes Excel files — for validation spreadsheets
+    "cartopy>=0.25.0",
+    "certifi>=2026.2.25",
 ]
 
 #  OPTIONAL DEVELOPMENT TOOLS 
