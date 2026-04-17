@@ -1,7 +1,84 @@
+# pyproject.toml — the single source of truth for this project's metadata and dependencies
+
 [project]
 name = "territorial-control-dsdm-master-project"
+
+# Project version — we use 0.1.0 at the start, increment as we add features
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.13"
-dependencies = []
+description = "Reproducible methods to estimate and map territorial control using conflict event data — World Bank FCV / BSE Master Thesis 2026"
+authors = [
+    { name = "Tizian Schenk", email = "tizian.schenk@bse.eu" },
+    { name = "Felipe Manzi", email = "felipe.manzi@bse.eu" },
+    { name = "Corneel Moons", email = "corneel.moons@bse.eu" },
+]
+license = { text = "MIT" }
+# Minimum Python version required — 3.10 gives us match statements and modern type hints
+requires-python = ">=3.10"
+
+# ── ALL PROJECT DEPENDENCIES ──────────────────────────────────────────────────
+# run 'uv sync' after cloning the repo in order to install them
+# run 'uv sync --extra dev' to install the dev tools (ruff, pytest, ipykernel) flagged as optional
+
+dependencies = [
+
+    #  DATA HANDLING 
+    "pandas>=2.0",           # core tabular data library — like Excel but in Python
+    "numpy>=1.26",           # fast numerical arrays — used under the hood by everything
+    "geopandas>=0.14",       # pandas for geographic/spatial data (points, polygons, shapes)
+    "shapely>=2.0",          # creates and manipulates geometric objects (points, lines, polygons)
+    "pyproj>=3.6",           # handles coordinate reference systems so maps align correctly
+    "fiona>=1.9",            # reads/writes vector spatial files (.shp, .geojson, .gpkg)
+    "pyarrow>=14.0",         # fast columnar storage format (Parquet) for large datasets
+
+    #  VISUALIZATION 
+    "matplotlib>=3.8",       # the foundation of all Python plotting
+    "seaborn>=0.13",         # statistical plots built on matplotlib — prettier defaults
+    "plotly>=5.18",          # interactive charts and maps you can zoom and hover over
+    "folium>=0.15",          # creates Leaflet.js interactive web maps
+    "contextily>=1.5",       # adds basemap tiles (satellite/street) behind your maps
+
+    #  SPATIAL ANALYSIS 
+    "scipy>=1.11",           # scientific computing: spatial stats, clustering, distance
+    "libpysal>=4.9",         # spatial statistics: Moran's I, spatial weights matrices
+    "esda>=2.5",             # Exploratory Spatial Data Analysis built on libpysal
+    "h3>=3.7",               # Uber's hexagonal grid system — for our hexagonal fishnet layer
+    "rasterio>=1.3",         # reads raster data: terrain grids, satellite images (GeoTIFF)
+    "rasterstats>=0.19",     # calculates statistics of rasters within polygon zones
+    "osmnx>=1.7",            # downloads OpenStreetMap road networks directly into Python
+
+    #  MACHINE LEARNING 
+    "scikit-learn>=1.4",     # the standard ML library: Random Forest, clustering, preprocessing
+    "xgboost>=2.0",          # gradient boosting — often outperforms Random Forest on tabular data
+    "hmmlearn>=0.3",         # Hidden Markov Models — our PRIMARY method recommended by World Bank
+
+    #  NLP (for ACLED event notes text analysis) 
+    "nltk>=3.8",             # Natural Language Toolkit: tokenization, stopwords, basic NLP
+    "spacy>=3.7",            # industrial-strength NLP — faster and more powerful than nltk
+
+    #  UTILITIES 
+    "jupyterlab>=4.0",       # modern interface for Jupyter notebooks — our exploration environment
+    "requests>=2.31",        # makes HTTP requests — used to download data from APIs
+    "tqdm>=4.66",            # progress bars — shows how long loops are taking
+    "python-dotenv>=1.0",    # loads secret API keys from a .env file safely
+    "openpyxl>=3.1",         # reads/writes Excel files — for validation spreadsheets
+]
+
+#  OPTIONAL DEVELOPMENT TOOLS 
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.3",             # extremely fast Python linter and formatter (replaces flake8+black)
+    "pytest>=8.0",           # the standard Python testing framework
+    "ipykernel>=6.29",       # allows Jupyter to use our virtual environment as a kernel
+]
+
+# TOOL CONFIGURATIONS 
+[tool.ruff]
+# Maximum characters per line before ruff flags it as too long
+line-length = 88
+
+# Which folders ruff should ignore when linting
+exclude = ["venv", ".venv", "data"]
+
+[tool.ruff.lint]
+# E = pycodestyle errors, F = pyflakes, I = isort (import sorting)
+select = ["E", "F", "I"]
