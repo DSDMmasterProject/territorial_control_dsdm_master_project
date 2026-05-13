@@ -1,23 +1,14 @@
 #!/usr/bin/env python3
 """
 Myanmar Conflict Map Extractor
-================================
 Converts Wikipedia SVG conflict maps into georeferenced GeoJSON and
-a raster grid CSV — ready to use as ground truth for a conflict
-prediction model.
+a raster grid CSV.
 
 Usage:
     python extract_myanmar_svg.py path/to/myanmar_YYYY-MM-DD.svg
-    python extract_myanmar_svg.py path/to/myanmar_YYYY-MM-DD.svg --resolution 0.05
-
-Output (written next to the input SVG, or in cwd if that dir is read-only):
-    myanmar_YYYY-MM-DD.geojson     — faction polygons in geographic coordinates
-    myanmar_YYYY-MM-DD_grid.csv    — raster grid: lat, lon, faction, date
 
 Requirements:
     pip install shapely scipy numpy
-
-Run download_myanmar_border.py once first for a precise border shape.
 """
 
 import xml.etree.ElementTree as ET
@@ -31,7 +22,7 @@ from shapely.ops import unary_union
 import warnings
 warnings.filterwarnings('ignore')
 
-# ── Ground control points: SVG pixel (x,y) → (lat, lon) ──────────────────
+# Ground control points: SVG pixel (x,y) -> (lat, lon)
 GCPS = [
     (581.1, 1235.5, 16.866, 96.195),  # Yangon
     (577.1,  724.1, 21.975, 96.084),  # Mandalay
@@ -53,9 +44,6 @@ GCPS = [
     (394.3,  599.0, 23.212, 94.014),  # Kalay
 ]
 
-# ── Myanmar national border ───────────────────────────────────────────────
-# Loads from myanmar_border.geojson if available (run download_myanmar_border.py
-# once to get it). Falls back to a rough built-in approximation.
 def _load_myanmar_border():
     border_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'myanmar_border.geojson')
     if os.path.exists(border_path):
@@ -66,7 +54,6 @@ def _load_myanmar_border():
         return geom
     else:
         print("  WARNING: myanmar_border.geojson not found, using rough approximation.")
-        print("  Run download_myanmar_border.py once for a precise border.")
         return Polygon([
             [92.30, 28.00], [92.60, 28.30], [93.20, 28.60], [94.00, 28.50],
             [95.00, 28.20], [96.00, 28.40], [96.60, 28.50], [97.00, 28.30],
@@ -108,11 +95,10 @@ def px_to_geo(points, lat_interp, lon_interp, c_lat, c_lon):
         X2 = np.column_stack([pts[nm, 0], pts[nm, 1], np.ones(nm.sum())])
         lats[nm] = X2 @ c_lat
         lons[nm] = X2 @ c_lon
-    return list(zip(lons.tolist(), lats.tolist()))  # GeoJSON order: [lon, lat]
+    return list(zip(lons.tolist(), lats.tolist()))
 
 
 def parse_svg_path(d):
-    """Parse SVG path d-attribute into closed pixel-coordinate rings."""
     rings = []
     current_ring = []
     tokens = re.findall(
@@ -124,7 +110,6 @@ def parse_svg_path(d):
         t = tokens[i]
         if t in 'MLCZSQTAHVmlczsqtahv':
             cmd = t; i += 1; continue
-
         if cmd in ('M', 'm'):
             if current_ring and len(current_ring) > 2:
                 rings.append(current_ring)
@@ -176,7 +161,6 @@ def parse_svg_path(d):
 
 
 def extract_factions(svg_path):
-    """Extract georeferenced faction polygons. Returns list of GeoJSON features."""
     lat_interp, lon_interp, c_lat, c_lon = build_transform()
     label_attr = '{http://www.inkscape.org/namespaces/inkscape}label'
     tree = ET.parse(svg_path)
@@ -192,8 +176,10 @@ def extract_factions(svg_path):
             continue
         style = path.get('style', '')
         fm = re.search(r'fill:#([0-9a-fA-F]{6})', style)
-        color = ('#' + fm.group(1)) if fm else path.get('fill', '#888888')
-
+        color = ('#' + fm.group(1)) if fm else path.get('fill', 'none')
+        # Skip paths with no fill — these are roads, borders, outlines, not territory
+        if not color or color == 'none':
+            continue
         for ring in parse_svg_path(d):
             if len(ring) < 3:
                 continue
@@ -229,7 +215,7 @@ def extract_factions(svg_path):
         except Exception as e:
             print(f"  Warning merging '{label}': {e}")
 
-    # Reconstruct Junta = Myanmar border minus all opposition zones
+    # Reconstruct Junta = Myanmar border minus all other factions
     try:
         others_union = unary_union(merged_others) if merged_others else Polygon()
         junta_geom = MYANMAR_BORDER.difference(others_union)
@@ -252,7 +238,6 @@ def extract_factions(svg_path):
 
 
 def rasterize(features, date_str, resolution=0.1):
-    """Rasterize GeoJSON features to a lat/lon grid. Returns list of CSV rows."""
     lat_min, lat_max = 9.5, 28.5
     lon_min, lon_max = 92.0, 101.5
     lats = np.arange(lat_min, lat_max, resolution)
@@ -290,12 +275,9 @@ def rasterize(features, date_str, resolution=0.1):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Extract Myanmar SVG conflict map → GeoJSON + grid CSV'
-    )
+    parser = argparse.ArgumentParser(description='Extract Myanmar SVG -> GeoJSON + grid CSV')
     parser.add_argument('svg', help='Input SVG file path')
-    parser.add_argument('--resolution', type=float, default=0.1,
-                        help='Grid resolution in degrees (default 0.1 ≈ 11km)')
+    parser.add_argument('--resolution', type=float, default=0.1)
     args = parser.parse_args()
 
     svg_path = args.svg
@@ -313,12 +295,12 @@ def main():
     with open(geojson_path, 'w') as f:
         json.dump({"type":"FeatureCollection","features":features}, f, indent=2)
 
-    print(f"\n  GeoJSON saved → {geojson_path}")
-    print(f"  {'Faction':<26} {'Area (deg²)':>12}")
+    print(f"\n  GeoJSON saved -> {geojson_path}")
+    print(f"  {'Faction':<26} {'Area (deg2)':>12}")
     print(f"  {'-'*40}")
     for feat in sorted(features, key=lambda f: -f['properties']['area_deg2']):
         p = feat['properties']
-        tag = ' ← reconstructed' if p['is_junta'] else ''
+        tag = ' <- reconstructed' if p['is_junta'] else ''
         print(f"  {p['faction']:<26} {p['area_deg2']:>12}{tag}")
 
     rows = rasterize(features, date_str, args.resolution)
@@ -329,8 +311,8 @@ def main():
         w.writerows(rows)
 
     counts = Counter(r[2] for r in rows)
-    n_mmr  = sum(v for k,v in counts.items() if k != 'Outside Myanmar')
-    print(f"\n  Grid CSV saved → {csv_path}")
+    n_mmr = sum(v for k,v in counts.items() if k != 'Outside Myanmar')
+    print(f"\n  Grid CSV saved -> {csv_path}")
     print(f"  {len(rows):,} total cells | {n_mmr:,} inside Myanmar\n")
     print(f"  {'Faction':<26} {'Cells':>6}  {'%Myanmar':>9}")
     print(f"  {'-'*44}")
