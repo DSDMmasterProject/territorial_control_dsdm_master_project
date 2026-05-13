@@ -57,6 +57,7 @@ dependencies = [
     "openpyxl>=3.1", # reads/writes Excel files — for validation spreadsheets
     "cartopy>=0.25.0",
     "certifi>=2026.2.25",
+    "imageio>=2.37.3",
 ]
 
 #  OPTIONAL DEVELOPMENT TOOLS 
