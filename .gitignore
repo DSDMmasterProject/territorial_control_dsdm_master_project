@@ -217,6 +217,9 @@ data/processed/
 # Final output maps — large files, reproduced by running the pipeline
 data/outputs/
 
+# Final output maps — large files, reproduced by running the pipeline
+output/myanmar/
+
 # Saved model binaries — too large, we document how to reproduce them
 models/*.pkl
 models/*.joblib
