@@ -242,5 +242,6 @@ reports/figures/*.pdf
 # data/raw/ is excluded above (ACLED/UCDP = gigabytes)
 # But our Wikipedia-derived validation labels are small text files
 # that others need to reproduce our results — so we explicitly include them
-!data/raw/validation/
-!data/raw/validation/**
+data/raw/validation/
+data/raw/validation/**
+data
