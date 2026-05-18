@@ -83,9 +83,12 @@ df["date"] = pd.to_datetime(
 dates = sorted(df["date"].unique())  # Get sorted list of all unique snapshot dates
 print(f"✅ Loaded {len(df):,} rows across {len(dates)} snapshots")  # Confirm load
 
-myanmar = gpd.read_file(
-    GADM_PATH, layer="ADM_ADM_0"
-)  # Load Myanmar country outline (level 0 only)
+if GADM_PATH.exists():
+    myanmar = gpd.read_file(GADM_PATH, layer="ADM_ADM_0")
+else:  # Fall back to NE world boundary file filtered to Myanmar
+    ne_path = pathlib.Path("data/raw/boundaries/myanmar/ne_10m_admin_0_countries.shp")
+    world = gpd.read_file(ne_path)
+    myanmar = world[world["ADM0_A3"] == "MMR"].copy()
 myanmar = myanmar.to_crs("EPSG:4326")  # Reproject to standard WGS84 lat/lon
 print("✅ Myanmar boundary loaded")  # Confirm
 
