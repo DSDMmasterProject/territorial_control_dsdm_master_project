@@ -91,6 +91,7 @@ print("Processing Wikipedia panel dataset...")
 panel = pd.read_csv(PANEL_IN)
 print(f"  Loaded {len(panel):,} rows")
 
+print(f"  Columns: {panel.columns.tolist()}")
 panel['wiki_label']   = panel['faction']
 panel['level2_group'] = panel['faction'].map(lambda f: get_wiki_hierarchy(f)[0])
 panel['level1_side']  = panel['faction'].map(lambda f: get_wiki_hierarchy(f)[1])
