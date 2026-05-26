@@ -221,6 +221,8 @@ data/outputs/
 models/*.pkl
 models/*.joblib
 models/*.h5
+# Model checkpoints / trained weights
+models/*.pt
 
 # Mac folder metadata — irrelevant to the project
 .DS_Store
