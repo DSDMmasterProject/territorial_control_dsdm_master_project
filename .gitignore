@@ -245,3 +245,8 @@ reports/figures/*.pdf
 # But our Wikipedia-derived validation labels are small text files
 # that others need to reproduce our results — so we explicitly include them
 data
+# Ablation experiment output directories (checkpoints + predictions)
+models/05_a_recovered_cells/
+models/05_b_graded_ce/
+models/05_c_masked_dice/
+models/05_d_recovered_and_masked_dice/
