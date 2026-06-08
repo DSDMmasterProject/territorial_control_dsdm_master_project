@@ -1,0 +1,6 @@
+fold,train_cutoff,n_train_months,n_val_months,unet_all_n,unet_all_accuracy,unet_all_macro_f1,unet_all_gov_f1,unet_all_opo_f1,unet_all_unc_f1,unet_changing_n,unet_changing_accuracy,unet_changing_macro_f1,unet_changing_gov_f1,unet_changing_opo_f1,unet_changing_unc_f1,nc_all_n,nc_all_accuracy,nc_all_macro_f1,nc_all_change_pct,nc_changing_n,nc_changing_accuracy,nc_changing_macro_f1,nc_changing_change_pct
+1,2024-03,5,24,3558,0.45,0.392,0.6,0.295,0.282,2032,0.372,0.34,0.488,0.239,0.293,3547,0.949,0.935,5.1,2029,0.911,0.901,8.9
+2,2024-07,9,20,2980,0.649,0.584,0.747,0.564,0.442,1700,0.427,0.355,0.572,0.28,0.212,2979,0.959,0.947,4.1,1700,0.928,0.915,7.2
+3,2024-09,11,18,2682,0.702,0.64,0.788,0.637,0.494,1530,0.409,0.333,0.547,0.279,0.173,2682,0.97,0.963,3.0,1530,0.947,0.941,5.3
+4,2025-03,17,12,1788,0.878,0.838,0.92,0.816,0.777,1020,0.452,0.332,0.614,0.266,0.116,1788,0.967,0.962,3.3,1020,0.942,0.938,5.8
+5,2025-09,23,6,894,0.921,0.9,0.944,0.889,0.867,510,0.445,0.362,0.576,0.275,0.234,894,0.965,0.961,3.5,510,0.939,0.935,6.1

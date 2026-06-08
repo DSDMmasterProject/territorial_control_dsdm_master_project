@@ -1,0 +1,391 @@
+# Myanmar Territorial Control Prediction — Full Thesis Context
+
+## Project Overview
+
+**Goal:** Predict territorial control in active conflict zones using conflict event data.
+Specifically: given UCDP conflict events in a geographic cell, can we predict which armed
+faction controls that cell?
+
+**Institutional context:** World Bank Fragility, Conflict & Violence (FCV) Challenge
+Project. Barcelona School of Economics Master's thesis. Three team members:
+- Corneel: SVG extraction pipeline, UCDP harmonization, initial modelling
+- Tizian: U-Net image segmentation model
+- Felipe: OC-SVM approach (work in progress)
+
+**Primary case study:** Myanmar civil war (post-February 2021 coup)
+
+**Deadline:** Final presentation July 3rd, submission June 28th 2026
+
+---
+
+## The Core Problem
+
+No clean labeled dataset for territorial control exists at sub-national resolution.
+Standard conflict datasets (UCDP, ACLED) record *events* — battles, fatalities,
+protests — but not who controls what territory.
+
+**Solution:** Wikipedia's Myanmar Civil War article is actively maintained by volunteer
+editors and contains:
+1. A regularly updated conflict map (SVG file)
+2. A structured Lua data module listing towns with control status
+3. Full revision history — snapshots across time
+
+---
+
+## Data Sources
+
+### Ground Truth Labels: Wikipedia Lua Module (PRIMARY)
+- Parsed via Wikipedia API
+- 346 towns with lat/lon coordinates + control icons
+- 28 icon types mapped to 4 control categories:
+  - `government` → SAC/Tatmadaw
+  - `resistance` → PDF/NUG
+  - `ethnic_armed_group` → KIA, AA, TNLA, MNDAA etc.
+  - `contested` → no clear controller
+- Collapsed to 3 model classes: `gov`, `opo`, `uncertain`
+- 276 historical revisions → 24 monthly snapshots (Nov 2023 to Mar 2026)
+- Forward-filled (LOCF) between snapshots
+- ACLED territorial sub-events used to enrich labels:
+  - "Non-state actor overtakes territory"
+  - "Government regains territory"
+  - "Non-violent transfer of territory"
+  - "Headquarters or base established"
+- 6-rule first-match-wins cascade combines Wikipedia + ACLED
+- **Final dataset: 5,238 labeled cell-months**
+- **185 PRIO-GRID cells × up to 29 months**
+- **Class distribution: gov 63%, opo 21%, uncertain 16%**
+- **Baseline to beat: 62.8% (majority class)**
+
+### Ground Truth Labels: Wikipedia SVG Extraction (SECONDARY — validation only)
+- Extracts full territorial polygons from Wikipedia SVG conflict maps
+- 62 snapshots from Dec 2023 to May 2026
+- Georeferenced using 18 city anchor points (pixel → lat/lon transform)
+- Junta territory reconstructed as Myanmar border minus all other faction polygons
+- 286 PRIO-GRID cells at 0.5° resolution
+- **Limitation:** unknown projection errors from pixel-to-coordinate interpolation
+- **Role:** visual validation cross-check only, not used as model input
+
+### Conflict Features: UCDP GED
+- Source: UCDP Georeferenced Event Dataset (GED 25.1 + Candidate 2025/2026)
+- Myanmar only, filtered to post-coup (Feb 2021+) for modelling
+- Pre-coup data (1989-2020) available for temporal validation experiments
+- **43 features** per PRIO-GRID cell per month:
+  - Core: `total_events`, `total_fatalities`, `events_gov`, `events_nug`,
+    `events_ula`, `events_kio`, `gov_vs_civilians`, `gov_event_share`
+  - Lags: 1, 3, 6 months for events and fatalities
+  - Rolling means: 3m, 6m for events and fatalities
+  - Actor flags: flag_kia, flag_pdf, flag_aa, flag_karen, flag_karenni,
+    flag_tnla, flag_mndaa, flag_chin_resistance
+  - Neighbor features: neighbor_n_events, neighbor_changed_faction
+  - Stability: months_in_current_faction, months_since_last_event
+- Already contains `priogrid_gid` for exact spatial join
+- Government (SAC) appears as side_a in ~99% of events
+
+### Conflict Features: ACLED
+- Used for territorial sub-events to extend labels (see above)
+- Full Myanmar dataset available
+- Town capture events inconsistently coded — not reliable as standalone labels
+
+---
+
+## Spatial Framework: PRIO-GRID
+
+**PRIO-GRID** is the standard 0.5° × 0.5° grid used in conflict research.
+Each cell ≈ 55km × 55km at Myanmar's latitude.
+
+Formula to compute cell ID from lat/lon:
+```python
+col = floor((lon + 180) / 0.5) + 1   # 1 to 720
+row = floor((lat + 90)  / 0.5) + 1   # 1 to 360
+gid = (row - 1) * 720 + col
+```
+
+Cell center coordinates:
+```python
+lon_center = (col - 0.5) * 0.5 - 180
+lat_center = (row - 0.5) * 0.5 - 90
+```
+
+Myanmar bounding box: ~92°E-101.5°E, 9.5°N-28.5°N → ~185 labeled cells
+
+---
+
+## Temporal Structure
+
+- **Full data range:** November 2023 to March 2026 (29 months)
+- **Train/validate split:** train ≤ September 2025, validate October 2025 - March 2026
+- **Training rows:** 4,128 | **Validation rows:** 1,110
+- **Temporal spacing:** irregular snapshots, forward-filled to monthly
+
+---
+
+## Actor Crosswalk (UCDP → Wikipedia)
+
+| UCDP actor | Wikipedia label | Level 2 group |
+|------------|----------------|---------------|
+| Government of Myanmar (Burma) | Junta/gov | Junta |
+| NUG, ABSDF | PDF | Pro-democracy |
+| ULA | AA (Arakan Army) | Ethnic armed |
+| KIO | KIA (Kachin) | Ethnic armed |
+| KNU | Karen | Ethnic armed |
+| KNPP | Karenni | Ethnic armed |
+| PSLF | TNLA | Ethnic armed |
+| MNDAA | MNDAA | Ethnic armed |
+| CNF | Chin Resistance | Ethnic armed |
+| PNLO | ZRA | Ethnic armed |
+| RCSS | RCSS | Ceasefire |
+| SSPP | SSPP | Ceasefire |
+
+---
+
+## Key Data Exploration Findings
+
+1. **Changes are rare:** Only 255 cell-month transitions involve a control change
+   across the full 29-month dataset. Change rate: ~1% of all cell-months.
+
+2. **Changes cluster in time:** Most changes happened in early-to-mid 2024
+   (peak: August 2024 with 38 changes — likely Operation 1027 aftermath).
+   Late 2025/early 2026 validation period is relatively quiet.
+
+3. **Changes cluster in space:** Changes concentrate on specific frontlines.
+   94 out of 185 cells change at least once. Some cells change up to 12 times.
+
+4. **Class persistence varies:**
+   - Government (gov): mean spell length 16.4 months — very sticky
+   - Opposition (opo): mean spell length 8.4 months
+   - Uncertain: mean spell length 7.9 months
+
+5. **Spatial waves:** When a cell changes, on average 0.8 neighboring cells
+   also changed in the same month. Changes propagate spatially.
+
+6. **Most common transitions:**
+   - gov → opo: 69 events (government losing ground)
+   - opo → gov: 49 events (government recapturing)
+   - uncertain → gov/opo: 87 events (contested zones resolving)
+
+---
+
+## The U-Net Model (Tizian's work)
+
+### Architecture
+- Framework: `segmentation_models_pytorch`
+- Encoder: ResNet-34 pretrained on ImageNet
+- Input: 10 channels (UCDP features), raster size 40×16 (padded)
+- Output: 3-class prediction map (gov/opo/uncertain) per cell
+- Total parameters: 22M (encoder 21.3M, decoder+head 0.8M)
+
+### Training Strategy
+- Phase 1 (epochs 1-30): encoder frozen, only decoder trains
+- Phase 2 (epochs 31-200): encoder unfrozen at lr=1e-5
+- Loss: 0.5 × weighted CrossEntropy + 0.5 × Dice loss
+- Optimizer: Adam, lr=1e-4, weight decay=1e-5
+- Class weights: inverse frequency
+
+### Single Split Results (train ≤ Sep 2025, val Oct 2025 - Mar 2026)
+| Model | Accuracy | Macro F1 |
+|-------|----------|---------|
+| Majority class baseline | 0.608 | 0.257 |
+| Random Forest (tabular) | 0.537 | 0.354 |
+| No-change baseline | 0.972 | 0.967 |
+| **U-Net (200 epochs)** | **0.918** | **0.899** |
+
+### The Critical Problem
+The no-change baseline (predict same label as last month) gets **macro F1 0.967**,
+beating the U-Net's 0.899. This is because 97% of cell-months are stable —
+the model is largely memorising geography rather than learning dynamics.
+
+---
+
+## Cross-Validation Results
+
+### Expanding Window (5 folds, 100 epochs each)
+
+| Fold | Cutoff | Val months | U-Net (all) | No-change (all) | U-Net (changing) | No-change (changing) |
+|------|--------|-----------|-------------|-----------------|------------------|---------------------|
+| 1 | 2024-03 | 24 | 0.392 | 0.935 | 0.340 | 0.901 |
+| 2 | 2024-07 | 20 | 0.584 | 0.947 | 0.355 | 0.915 |
+| 3 | 2024-09 | 18 | 0.640 | 0.963 | 0.333 | 0.941 |
+| 4 | 2025-03 | 12 | 0.838 | 0.962 | 0.332 | 0.938 |
+| 5 | 2025-09 | 6 | 0.900 | 0.961 | 0.362 | 0.935 |
+
+**Key finding:** No-change wins in every fold. U-Net improves significantly with more
+training data (0.392 → 0.900) but never beats the no-change baseline on aggregate
+metrics because territorial control is too persistent.
+
+---
+
+## Change-Event Only Evaluation
+
+The most meaningful evaluation: restrict to the 255 cell-months where control
+actually changed. No-change scores 0% by definition on these rows.
+
+| Fold | Cutoff | Change events | U-Net accuracy | Random (1/3 classes) |
+|------|--------|--------------|---------------|---------------------|
+| 1 | 2024-03 | 181 | 0.315 | 0.333 |
+| 2 | 2024-07 | 122 | 0.328 | 0.333 |
+| 3 | 2024-09 | 81 | 0.407 | 0.333 |
+| 4 | 2025-03 | 59 | 0.390 | 0.333 |
+| 5 | 2025-09 | 31 | 0.484 | 0.333 |
+
+**Mean U-Net accuracy on change events: 0.385**
+**No-change baseline: 0.000 by definition**
+
+The U-Net beats random guessing on change events, and improves with more training
+data. But performance is limited by the small number of change events available.
+
+---
+
+## Pre-Coup Temporal Validation
+
+**Test:** Feed the trained U-Net (fold 5) with UCDP features averaged over 2018-2020
+(pre-coup baseline) and compare predictions against November 2023 ground truth.
+
+**Motivation:** If the model learned a general conflict-to-control relationship,
+pre-coup conflict patterns should still roughly predict post-coup control geography
+(same actors, same geographic dynamics, just different intensity).
+
+**Result:**
+- Accuracy: 0.553 (majority class baseline: 0.561)
+- Macro F1: 0.393
+- The model essentially defaults to predicting government everywhere
+- 41 pre-coup cells had any conflict activity vs 185 labeled cells
+- `uncertain` recall collapses to 11% — model has no idea where contested zones will be
+
+**Interpretation:** The model has not learned a generalizable conflict-to-control
+relationship. It learned the specific post-coup geography. With pre-coup inputs
+(lower intensity, different spatial distribution) it falls back to near-majority-class
+prediction. This is an important limitation for generalization to new conflicts.
+
+---
+
+## Known Limitations
+
+1. **Temporal coverage:** Only 29 months of ground truth labels (Nov 2023 - Mar 2026).
+   Pre-coup Wikipedia SVGs do not exist. Insufficient for robust change prediction.
+
+2. **Label quality:** Wikipedia is crowd-sourced, may lag real events by ~5 weeks.
+   Single editor's judgment. Some icon ambiguity (KIO/KIA, MNDAA, PSLF/TNLA share icons).
+
+3. **No-change dominance:** 97% of cell-months are stable. Any model evaluated on
+   aggregate metrics will be dominated by the no-change baseline.
+
+4. **Small change events:** Only 255 change events across 29 months. Validation sets
+   for change prediction are too small for statistically robust conclusions.
+
+5. **Geographic memorisation:** U-Net appears to learn stable geographic patterns
+   rather than dynamic conflict-to-control relationships (confirmed by pre-coup test).
+
+6. **LOCF assumption:** Labels are forward-filled between Wikipedia snapshots.
+   Actual changes between snapshots are invisible.
+
+7. **No true test set:** 29-month constraint makes 3-way train/val/test split infeasible.
+
+8. **SVG georeferencing:** ~4-6km error from pixel-to-coordinate interpolation.
+   SVG approach not used as primary labels for this reason.
+
+---
+
+## File Structure
+
+```
+territorial_control_dsdm_master_project/
+├── add_faction_labels.py          # harmonize faction names across datasets
+├── build_feature_matrix.py        # build 33-feature matrix (our approach)
+├── train_models.py                # logistic regression / RF / GBM baseline
+├── no_change_baseline.py          # compute no-change baseline metrics
+├── frontline_filter.py            # filter to frontline cells only
+├── time_crossval.py               # expanding window cross-validation
+├── extracting_ground_truth/
+│   ├── extract_myanmar_svg.py     # extract single SVG to PRIO-GRID CSV
+│   ├── batch_extract.py           # batch process all 62 SVGs
+│   ├── visualize_grid.py          # visualize grid CSV as map
+│   ├── myanmar_border.geojson     # Natural Earth Myanmar boundary
+│   ├── panel_dataset.csv          # 286 cells × 62 snapshots (SVG approach)
+│   └── panel_dataset_labelled.csv # same with faction hierarchy columns
+├── data/
+│   ├── raw/ucdp/
+│   │   ├── GEDEvent_myanmar_merged.csv   # full UCDP dataset
+│   │   └── ucdp_labelled.csv             # UCDP with faction labels added
+│   └── processed/
+│       ├── 10_target_variable.parquet    # Lua module labels (PRIMARY)
+│       ├── myanmar_priogrid_features.csv # 43 UCDP features
+│       ├── myanmar_training_dataset.csv  # final training set
+│       └── myanmar_frontline_cells.csv  # cells kept after frontline filter
+├── notebooks/
+│   ├── 03_unet_model.ipynb        # U-Net training (Tizian)
+│   ├── 04_data_exploration.ipynb  # exploratory data analysis
+│   ├── 05_unet_crossval.ipynb     # cross-validation + pre-coup test
+│   └── outputs/
+│       ├── unet_fold1_2024-03.pt  # saved model checkpoints
+│       ├── unet_fold5_2025-09.pt
+│       └── crossval_results.csv
+└── notebook_training/
+    ├── 10_target_variable_construction.ipynb  # label pipeline (Tizian)
+    └── checkpoints/
+        └── 10_target_variable.parquet
+```
+
+---
+
+## Open Research Questions
+
+These are the directions most worth exploring next:
+
+1. **Previous control state as input channel:** Add the previous month's control map
+   as an 11th input channel to the U-Net. This gives the model explicit temporal
+   memory and could dramatically improve change prediction. Currently the model
+   has no access to previous state — it predicts from conflict features alone.
+
+2. **Oversampling frontline cells:** Mihai suggested oversampling cells near the
+   line of control using WeightedRandomSampler (5x oversampling). This could
+   improve opo recall (currently 0.815) and reduce gov→opo misclassifications.
+
+3. **Spatial cross-validation:** Train on one geographic region of Myanmar, predict
+   the other. Tests whether the model learned geography or conflict dynamics.
+   Mihai suggested this as the most meaningful validation.
+
+4. **Delta map augmentation:** Instead of predicting absolute control, predict the
+   *change* from last month. This directly targets the problem the model struggles
+   with most.
+
+5. **Extension to Somalia/Nigeria:** The World Bank wants the pipeline to generalize.
+   One naive application to another country as a discussion plot would demonstrate
+   transferability (or lack thereof).
+
+6. **Longer lag features:** Current lags are 1/3/6 months. Given that gov spell
+   length is 16 months on average, 12-month lags might capture more relevant
+   pre-change patterns.
+
+7. **Terrain features:** SRTM elevation + slope as static input channels.
+   Insurgent groups tend to hold highland areas. Could improve geographic predictions.
+
+---
+
+## Supervisor Guidance (Mihai Croicu)
+
+Key feedback received:
+
+- **The no-change baseline must be beaten.** Any model that doesn't beat "predict
+  same as last month" is not adding value. This is the hard benchmark.
+
+- **Evaluate on changing cells specifically.** Overall accuracy is misleading.
+  The interesting question is: when something changes, does the model know?
+
+- **Spatial cross-validation is the right test.** Train on half the country,
+  predict the other half. If it works, the model learned dynamics. If not,
+  it memorised geography.
+
+- **More training data is the bottleneck.** With only 29 months of labels,
+  early folds have too little training data and later folds have too little
+  validation data.
+
+- **Don't go to Nigeria yet.** Nail Myanmar first. One naive application as
+  a discussion plot is sufficient.
+
+- **The U-Net image framing is theoretically right.** Territorial control is
+  a spatial phenomenon. CNN kernels handle spatial lag automatically.
+  But watch for overfitting given the small dataset (only 23-29 training rasters).
+
+- **Descriptive statistics of cell changes first.** How many cells change,
+  after how much time, with how many neighbors changing simultaneously —
+  these geostatistics should precede any modelling.
