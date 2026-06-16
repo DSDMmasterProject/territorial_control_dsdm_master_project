@@ -4,7 +4,7 @@
 #
 # Inputs:
 #   data/processed/10_target_variable.parquet
-#   data/processed/myanmar_priogrid_features.csv
+#   data/processed/myanmar_feature_store.csv
 #
 # Outputs:
 #   models/focal_mask/weights.pt
@@ -71,7 +71,7 @@ print(f'Target rows: {len(target):,}  |  months: {target["year_month"].nunique()
 print('\nClass distribution:')
 print(target['target'].value_counts())
 
-features = pd.read_csv(DATA_PROC / 'myanmar_priogrid_features.csv')
+features = pd.read_csv(DATA_PROC / 'myanmar_feature_store.csv')
 features['year_month'] = features['year_month'].astype(str)
 
 # ── Raster construction ───────────────────────────────────────────────────────
