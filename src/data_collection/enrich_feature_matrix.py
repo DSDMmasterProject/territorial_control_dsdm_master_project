@@ -1,9 +1,9 @@
-# ── step12_merge_enriched_features.py ────────────────────────────────────────
+# ── enrich_feature_matrix.py ─────────────────────────────────────────────────
 # Merges PRIOGRID catalog features (terrain + resources) into the UCDP feature matrix.
 # Static features broadcast to all months (same value per cell, every month).
 # Yearly features: latest available year used as static proxy for 2021-2026.
 # Output: data/processed/myanmar_priogrid_features_enriched.csv
-# Run from project root: uv run python src/data_collection/step12_merge_enriched_features.py
+# Run from project root: uv run python src/data_collection/enrich_feature_matrix.py
 
 from pathlib import Path  # file path handling
 

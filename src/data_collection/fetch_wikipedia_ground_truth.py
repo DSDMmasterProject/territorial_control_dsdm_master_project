@@ -1,16 +1,17 @@
 # ============================================================
-# STEP 5: Build temporal ground truth from module revision history
+# fetch_wikipedia_ground_truth.py
+# Build temporal ground truth from Wikipedia module revision history
 # Project: BSE / World Bank Territorial Control Thesis
 # Author:  Tizian Schenk
 # Date: 07.05.2026
 # ============================================================
 
-# The script first fetches all revision IDs and timestamps of the Lua module in a paginated loop
+# The script fetches all revision IDs and timestamps of the Lua module in a paginated loop
 # getting potentially hundreds of edit records cheaply without downloading their content.
 # It then groups revisions by calendar month and keeps only the last edit of each month,
 # giving one clean representative snapshot per month.
 # For each selected month, it fetches the full Lua content of that specific revision by ID,
-# runs the same parser we built in Step 2,
+# runs the Lua parser,
 # and collects every location record into a master list tagged with that month's date.
 # The result is a stacked CSV where each row is a location-at-a-point-in-time observation
 # transforming our single 346-point snapshot into a temporal panel dataset potentially spanning 2021–2026.
@@ -19,7 +20,7 @@
 
 import json  # json: parse API responses
 import pathlib  # pathlib: file path handling
-import re  # re: regex pattern matching (reuse our Step 2 parser logic)
+import re  # re: regex pattern matching
 import time  # time: add pauses between API calls to be polite to Wikipedia's servers
 from datetime import datetime  # datetime: parse and compare timestamps
 
@@ -46,9 +47,8 @@ HEADERS = {
 
 API_DELAY = 1.5  # Seconds to wait between API calls — Wikipedia requests politeness (rate limiting)
 
-# ── 2. REUSE OUR MARK MAPPING FROM STEP 2 ────────────────────
+# ── 2. MARK MAPPING ──────────────────────────────────────────
 
-# This is the same dictionary we built in Step 2 — pasted here so this script is self-contained
 MARK_MAPPING = {  # Maps Wikipedia icon filename → (control_status, actor, confidence)
     "Location dot red.svg": ("government", "Military Forces of Myanmar (SAC)", "high"),
     "Location dot blue.svg": (
@@ -119,7 +119,7 @@ SKIP_MARKS = {  # Icons that are NOT control status markers — skip these
 
 # ── 3. DEFINE THE PARSER FUNCTION (reusable) ─────────────────
 
-# We wrap our Step 2 parsing logic into a function so we can call it for each revision
+# Wraps the Lua parsing logic into a function so we can call it for each revision
 FULL_ENTRY_PATTERN = re.compile(  # Regex: match every { } block containing lat=
     r'\{([^}]*lat\s*=\s*"[^"]*"[^}]*)\}', re.DOTALL
 )
@@ -186,7 +186,7 @@ def parse_lua_to_records(
 # ── 4. FETCH ALL REVISION IDs AND TIMESTAMPS ─────────────────
 
 print("=" * 60)
-print("STEP 5: Building temporal ground truth from revision history")
+print("Building temporal ground truth from Wikipedia revision history")
 print("=" * 60)
 
 print(
@@ -390,7 +390,7 @@ with open(meta_path, "w", encoding="utf-8") as f:  # Open file for writing
 print(f"✅ Revision metadata saved to: {meta_path}")  # Confirm
 
 print("\n" + "=" * 60)
-print("STEP 5 COMPLETE.")
+print("COMPLETE.")
 print("You now have a temporal validation dataset.")
 print(f"Failed revisions: {len(failed_revids)}")
 print("=" * 60)

@@ -1,5 +1,6 @@
 # ============================================================
-# STEP 8: Aggregate UCDP events → PRIOGRID monthly feature matrix
+# build_priogrid_features.py
+# Aggregate UCDP events → PRIOGRID monthly feature matrix
 # Input:  data/processed/myanmar_ucdp_events.csv
 # Output: data/processed/myanmar_priogrid_features.csv
 # This is the X matrix that feeds directly into the model
@@ -7,7 +8,7 @@
 
 # Right now we have a list of 5,737 individual conflict events (one row per violent incident).
 # The model doesn't work at the event level — it works at the cell-month level.
-# Step 8 asks: "For each of the 192 PRIOGRID cells, for each of the 50 months since the coup, what happened?"
+# For each of the 192 PRIOGRID cells, for each of the 50 months since the coup, what happened?
 # The answer becomes a row in the feature matrix — the X that feeds the model.
 
 # The feature engineering step aggregates 5,737 georeferenced conflict events into a 192-cell × 50-month panel
@@ -33,7 +34,7 @@ OUT_PATH = OUT_DIR / "myanmar_priogrid_features.csv"  # Feature matrix output
 # ── 2. LOAD EVENTS ────────────────────────────────────────────
 
 print("=" * 60)
-print("STEP 8: Building PRIOGRID monthly feature matrix")
+print("Building PRIOGRID monthly feature matrix")
 print("=" * 60)
 
 df = pd.read_csv(EVENTS_PATH, encoding="utf-8")  # Load our Step 7 output
@@ -329,6 +330,6 @@ print(f"\n✅ Feature matrix saved: {OUT_PATH}")
 print(f"   Size: {OUT_PATH.stat().st_size / 1e6:.1f} MB")
 
 print("\n" + "=" * 60)
-print("STEP 8 COMPLETE.")
-print("Next: Step 9 = join ground truth labels → build train/validation set")
+print("COMPLETE.")
+print("Next: build_priogrid_labels.py = join ground truth labels → build train/validation set")
 print("=" * 60)
