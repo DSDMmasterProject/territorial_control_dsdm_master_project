@@ -24,7 +24,7 @@
 # | 4 | ACLED ≠ Wiki, Wiki DID change within ±1 month | Wiki side | `disagree_recent_wiki_use_wiki` |
 # | 5 | ACLED has control signals from both sides | `uncertain` | `acled_mixed` |
 # 
-# **Output**: `checkpoints/10_target_variable.parquet`
+# **Output**: `data/processed/10_target_variable.parquet`
 
 # ## 0. Setup
 
@@ -43,16 +43,14 @@ import geopandas as gpd
 from shapely.geometry import box
 from pathlib import Path
 
-NB_DIR = Path('.')
-ROOT   = Path('../..')
-FIG    = ROOT / 'reports' / 'figures'
-CKPT   = Path('../checkpoints')
+ROOT  = Path(__file__).resolve().parents[2]
+FIG   = ROOT / 'reports' / 'figures'
 FIG.mkdir(parents=True, exist_ok=True)
 
-COMP_PATH  = ROOT / 'data/processed/acled_wiki_comparison.parquet'
-WIKI_PATH  = ROOT / 'data/processed/myanmar_priogrid_labels.csv'
-GADM_PATH  = ROOT / 'data/raw/gadm/gadm41_MMR.gpkg'
-CKPT_OUT   = CKPT / '10_target_variable.parquet'
+COMP_PATH  = ROOT / 'data' / 'processed' / 'acled_wiki_comparison.parquet'
+WIKI_PATH  = ROOT / 'data' / 'processed' / 'myanmar_priogrid_labels.csv'
+GADM_PATH  = ROOT / 'data' / 'raw' / 'gadm' / 'gadm41_MMR.gpkg'
+CKPT_OUT   = ROOT / 'data' / 'processed' / '10_target_variable.parquet'
 
 MMR = (92.0, 9.5, 101.5, 28.5)
 
