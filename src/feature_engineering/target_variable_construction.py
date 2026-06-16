@@ -8,7 +8,7 @@
 # 
 # **Base**: full Wikipedia label panel (`data/processed/myanmar_priogrid_labels.csv`,
 # 5,238 cell-months, 185 cells, Nov 2023 – Mar 2026).  
-# ACLED territorial-control signals (`checkpoints/09_acled_wiki_comparison.parquet`)
+# ACLED territorial-control signals (`data/processed/acled_wiki_comparison.parquet`)
 # are left-joined onto that base to enrich rows that happen to have a control-signal event
 # in the same cell-month.  
 # For rows with no ACLED control event the Wikipedia label is used directly.
@@ -49,7 +49,7 @@ FIG    = ROOT / 'reports' / 'figures'
 CKPT   = Path('../checkpoints')
 FIG.mkdir(parents=True, exist_ok=True)
 
-COMP_PATH  = CKPT / '09_acled_wiki_comparison.parquet'
+COMP_PATH  = ROOT / 'data/processed/acled_wiki_comparison.parquet'
 WIKI_PATH  = ROOT / 'data/processed/myanmar_priogrid_labels.csv'
 GADM_PATH  = ROOT / 'data/raw/gadm/gadm41_MMR.gpkg'
 CKPT_OUT   = CKPT / '10_target_variable.parquet'
