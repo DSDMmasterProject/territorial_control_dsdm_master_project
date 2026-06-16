@@ -1,22 +1,18 @@
 # ============================================================
-# STEP 7: Load and label Myanmar UCDP event data
+# load_ucdp_events.py
+# Load and label Myanmar UCDP event data
 # Input:   data/raw/ucdp/GEDEvent_myanmar_merged.csv
 #          (created by merge_ucdp_sources.py — run that first)
+#          data/raw/validation/actor_taxonomy_myanmar.csv
+#          (created by build_actor_taxonomy.py — run that first)
 # Output:  data/processed/myanmar_ucdp_events.csv
 #          data/processed/myanmar_ucdp_events_full_history.csv
 # ============================================================
 
-# (2/2)
-# The taxonomy script builds a lookup table from every actor string that actually appears in the GED —
-# verified from the data itself.
-# Each actor gets three classification levels so you can group at whatever granularity the model needs,
-# and the coverage check at the end confirms zero unmatched actors.
-# The loading script reads only the 21 relevant columns from the 250MB GED file, filters immediately to Myanmar,
-# does the same for the Candidate file, stacks them vertically after labelling each row's origin,
-# parses dates and adds a year-month key, filters to the post-coup period (Feb 2021 onwards), and joins
-# the taxonomy for both sides of each conflict. The result is a clean,
-# analysis-ready event dataset with actor labels at three levels of granularity.
-# -----------------------------------------------------
+# Reads the merged UCDP file, filters to Myanmar post-coup events (Feb 2021 onwards),
+# parses dates, adds a year-month key, and joins the actor taxonomy for both sides
+# of each conflict. The result is a clean, analysis-ready event dataset with actor
+# labels at three levels of granularity.
 
 
 import pathlib  # pathlib: file path handling
@@ -39,7 +35,7 @@ FULL_PATH = OUT_DIR / "myanmar_ucdp_events_full_history.csv"  # Full history out
 # ── 2. LOAD THE MERGED FILE ───────────────────────────────────
 
 print("=" * 60)
-print("STEP 7: Loading UCDP Myanmar event data")
+print("Loading UCDP Myanmar event data")
 print("=" * 60)
 
 if not EVENTS_PATH.exists():  # Check merged file exists before loading
@@ -162,6 +158,6 @@ df.to_csv(FULL_PATH, index=False, encoding="utf-8")  # Save full history dataset
 print(f"✅ Saved: {FULL_PATH}  ({len(df):,} rows, full history)")
 
 print("\n" + "=" * 60)
-print("STEP 7 COMPLETE.")
-print("Next: Step 8 = aggregate events to PRIOGRID cells per month")
+print("COMPLETE.")
+print("Next: build_priogrid_features.py = aggregate events to PRIOGRID cells per month")
 print("=" * 60)

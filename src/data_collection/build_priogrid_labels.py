@@ -1,5 +1,6 @@
 # ============================================================
-# STEP 9: Project Wikipedia point labels → PRIOGRID cell labels
+# build_priogrid_labels.py
+# Project Wikipedia point labels → PRIOGRID cell labels
 # This creates the y vector (what we want to predict)
 #
 # Input:  data/raw/validation/myanmar_wikipedia_temporal_groundtruth.csv
@@ -62,7 +63,7 @@ def latlon_to_priogrid_gid(lat, lon):
 # ── 3. LOAD WIKIPEDIA LABELS ──────────────────────────────────
 
 print("=" * 60)
-print("STEP 9: Building PRIOGRID label vector (y)")
+print("Building PRIOGRID label vector (y)")
 print("=" * 60)
 
 wiki = pd.read_csv(WIKI_PATH, encoding="utf-8")  # Load 8,035 labeled observations
@@ -311,6 +312,6 @@ print(
 )
 
 print("\n" + "=" * 60)
-print("STEP 9 COMPLETE.")
-print("Next: Step 10 = join X features + y labels → training dataset")
+print("COMPLETE.")
+print("Next: build_training_dataset.py = join X features + y labels → training dataset")
 print("=" * 60)

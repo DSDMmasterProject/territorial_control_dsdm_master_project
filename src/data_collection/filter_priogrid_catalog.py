@@ -1,11 +1,11 @@
-# ── step11_priogrid_catalog.py ────────────────────────────────────────────────
+# ── filter_priogrid_catalog.py ────────────────────────────────────────────────
 # data from here: https://grid.prio.org/#/download
 # Filters raw PRIOGRID catalog CSV files to Myanmar cells only.
 # Input:  data/raw/priogrid_static.csv   (from grid.prio.org Static Variables)
 #         data/raw/priogrid_yearly.csv   (from grid.prio.org Yearly Variables)
 # Output: data/processed/priogrid_static_myanmar.csv
 #         data/processed/priogrid_yearly_myanmar.csv
-# Run from project root: uv run python src/data_collection/step11_priogrid_catalog.py
+# Run from project root: uv run python src/data_collection/filter_priogrid_catalog.py
 
 from pathlib import Path  # file path handling
 

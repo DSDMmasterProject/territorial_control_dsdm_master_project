@@ -1,5 +1,6 @@
 # ============================================================
-# STEP 10: Join X features + y labels → training dataset
+# build_training_dataset.py
+# Join X features + y labels → training dataset
 # This is the final step before modelling.
 #
 # Inputs:  data/processed/myanmar_priogrid_features.csv  (X)
@@ -35,7 +36,7 @@ PRED_PATH = (
 # ── 2. LOAD X AND Y ───────────────────────────────────────────
 
 print("=" * 60)
-print("STEP 10: Building training dataset (X + y)")
+print("Building training dataset (X + y)")
 print("=" * 60)
 
 X = pd.read_csv(X_PATH, encoding="utf-8")  # Load feature matrix (12,338 rows)
@@ -185,7 +186,7 @@ print(f"✅ Prediction dataset: {PRED_PATH}  ({len(pred):,} rows)")
 
 print(f"""
 {"=" * 60}
-STEP 10 COMPLETE — READY TO SHARE WITH TEAMMATES
+COMPLETE — READY TO SHARE WITH TEAMMATES
 {"=" * 60}
 
 FILES TO SHARE (from data/processed/):
