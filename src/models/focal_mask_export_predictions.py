@@ -31,7 +31,7 @@ PREDICTIONS_PATH = OUT_DIR / 'predictions.csv'
 assert WEIGHTS_PATH.exists(), f'Weights not found: {WEIGHTS_PATH}'
 
 # ── Config (must match focal_mask_train.py exactly) ───────────────────────────
-TRAIN_CUTOFF    = '2025-01'
+TRAIN_CUTOFF    = '2025-06'
 NEIGHBOR_RADIUS = 1
 NUM_CLASSES     = 3
 ENCODER_NAME    = 'resnet34'

@@ -33,12 +33,24 @@ checkpoints/
 
        Stage 3: models/
                      ↓
+data/processed/
+  selected_features_32.csv   ← feature importance ranking (from notebook)
+
 models/focal_mask/
   weights.pt
   predictions.csv
   training_curves.png
   eval_confusion_matrix.png
   eval_transitions.png
+
+models/baseline_random_proportion/
+  predictions.csv
+
+models/baseline_no_change/
+  predictions.csv
+
+models/
+  baseline_comparison.csv    ← side-by-side metrics for all three models
 ```
 
 ---
@@ -107,21 +119,53 @@ python3 src/feature_engineering/build_feature_store.py
 
 ## Stage 3 — Models
 
-Scripts in `src/models/`. Train and evaluate are separate steps:
+Scripts in `src/models/`. Run in this order:
 
 ```bash
-# Train — runs 200 epochs, saves weights + predictions (~hours on CPU, faster on GPU)
+# 1. (One-time) Run notebook 10_focal_mask_all_features.ipynb to produce:
+#      data/processed/selected_features_32.csv  ← importance-ranked feature list
+#      models/focal_mask_all_features/predictions.csv
+
+# 2. Train focal_mask on the 32 selected features
+#    Reads selected_features_32.csv automatically via feature_selection.py
+#    (~hours on CPU, faster on GPU/MPS)
 python3 src/models/focal_mask_train.py
 
-# Evaluate — reads predictions.csv, produces metrics + figures (seconds)
+# 3. Evaluate focal_mask — metrics + figures (seconds)
 python3 src/models/focal_mask_eval.py
+
+# 4. Run baselines (seconds each — no training required)
+python3 src/models/baseline_random_proportion.py
+python3 src/models/baseline_no_change.py
+
+# 5. Compare all three models side-by-side → models/baseline_comparison.csv
+python3 src/models/evaluate_baselines.py
 ```
 
 **Model:** U-Net with ResNet34 encoder (ImageNet pre-trained), 3-class output (gov / opo / uncertain).
 
-**To change which features the model uses:** edit `INPUT_FEATURES` in `focal_mask_train.py`. All columns in `myanmar_feature_store.csv` are valid candidates.
+**Feature selection:** `focal_mask_train.py` reads `INPUT_FEATURES` from
+`data/processed/selected_features_32.csv` via `src/models/feature_selection.py`.
+To use a different feature list, pass an explicit path:
 
-**To create a model variant:** copy both `focal_mask_train.py` and `focal_mask_eval.py` with a new name, then change `INPUT_FEATURES` and `OUT_DIR` in the train script and `OUT_DIR` in the eval script.
+```python
+from src.models.feature_selection import load_selected_features
+INPUT_FEATURES = load_selected_features('data/processed/my_features.csv')
+```
+
+The CSV must have a `feature` column. Feature order matters — it maps directly to
+raster channels and must match the order the model was trained with.
+
+**Baselines:**
+
+| Script | Logic |
+|---|---|
+| `baseline_random_proportion.py` | Samples classes proportional to training distribution (same SEED as focal_mask) |
+| `baseline_no_change.py` | Persistence: predicts last known state for each cell, carried forward from first observation in the full series |
+
+**To create a model variant:** copy `focal_mask_train.py` and `focal_mask_eval.py`
+with a new name, then change `OUT_DIR` in both scripts. `INPUT_FEATURES` is loaded
+automatically from `feature_selection.py`.
 
 ---
 
