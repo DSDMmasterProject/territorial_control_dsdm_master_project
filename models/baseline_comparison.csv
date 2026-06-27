@@ -1,0 +1,4 @@
+model,n_val,accuracy,macro_f1,gov_f1,opo_f1,unc_f1,trans_acc,stable_acc,n_trans,n_stable
+focal_mask,1647,0.9387,0.9252,0.9547,0.9063,0.9146,0.4,0.948,40,1424
+random_proportion,1647,0.4596,0.317,0.6309,0.2228,0.0971,0.35,0.467,40,1424
+no_change,1647,0.9727,0.9681,0.9797,0.9568,0.9677,0.0,1.0,40,1424
