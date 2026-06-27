@@ -55,7 +55,7 @@ np.random.seed(SEED)
 os.environ['PYTHONHASHSEED'] = str(SEED)
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-TRAIN_CUTOFF = '2025-06'
+TRAIN_CUTOFF = '2025-09'
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 PROJECT_ROOT     = Path(__file__).resolve().parents[2]
