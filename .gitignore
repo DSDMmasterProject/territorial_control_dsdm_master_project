@@ -251,3 +251,6 @@ models/05_a_recovered_cells/
 models/05_b_graded_ce/
 models/05_c_masked_dice/
 models/05_d_recovered_and_masked_dice/
+legacy/
+project_review/
+models/oLD
