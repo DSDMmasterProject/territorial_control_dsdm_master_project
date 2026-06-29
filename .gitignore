@@ -224,9 +224,9 @@ output/myanmar/
 models/*.pkl
 models/*.joblib
 models/*.h5
-# Model checkpoints / trained weights
+# Model checkpoints / trained weights (** covers any subdirectory depth)
+models/**/*.pt
 models/*.pt
-models/temporal/*.pt
 
 # Mac folder metadata — irrelevant to the project
 .DS_Store
@@ -254,3 +254,4 @@ models/05_d_recovered_and_masked_dice/
 legacy/
 project_review/
 models/oLD
+docs/
