@@ -26,7 +26,7 @@ from pathlib import Path
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 SEED         = 20269999
-TRAIN_CUTOFF = '2025-06'
+TRAIN_CUTOFF = '2025-09'
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 PROJECT_ROOT     = Path(__file__).resolve().parents[2]

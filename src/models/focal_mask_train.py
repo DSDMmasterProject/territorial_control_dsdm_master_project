@@ -44,7 +44,7 @@ os.environ['PYTHONHASHSEED'] = str(SEED)
 print(f'Global seed fixed: {SEED}')
 
 # ── Config ────────────────────────────────────────────────────────────────────
-TRAIN_CUTOFF     = '2025-06'
+TRAIN_CUTOFF     = '2025-09'
 NEIGHBOR_RADIUS  = 1
 FOCAL_OUT_WEIGHT = 0.0
 NUM_EPOCHS       = 200
@@ -66,7 +66,6 @@ FOCAL_MASK_PATH  = MODELS_DIR / f'focal_mask_r{NEIGHBOR_RADIUS}.npy'
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from src.models.feature_selection import load_selected_features
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 target = pd.read_parquet(DATA_PROC / '10_target_variable.parquet')
@@ -80,16 +79,12 @@ features = pd.read_csv(DATA_PROC / 'myanmar_feature_store.csv')
 features['year_month'] = features['year_month'].astype(str)
 
 # ── Raster construction ───────────────────────────────────────────────────────
-INPUT_FEATURES = load_selected_features()
-if len(INPUT_FEATURES) != 32:
-    warnings.warn(
-        f"Expected 32 features but loaded {len(INPUT_FEATURES)} from "
-        f"feature_selection.py. Channel count mismatch may affect "
-        "saved-weights compatibility.",
-        RuntimeWarning,
-    )
-print(f'Input features ({len(INPUT_FEATURES)}): first={INPUT_FEATURES[0]}, '
-      f'last={INPUT_FEATURES[-1]}')
+INPUT_FEATURES = [
+    'total_events', 'total_fatalities', 'events_gov', 'events_nug', 'events_ula',
+    'events_kio', 'gov_vs_civilians', 'gov_event_share',
+    'total_events_lag1', 'total_fatalities_lag1',
+]
+print(f'Input features ({len(INPUT_FEATURES)}): {INPUT_FEATURES}')
 NUM_CHANNELS = len(INPUT_FEATURES)
 
 LABEL_MAP   = {'gov': 0, 'opo': 1, 'uncertain': 2}
@@ -260,7 +255,7 @@ def focal_combined_loss(predictions, targets, label_mask):
     n_effective = pixel_w.sum() + 1e-8
     ce = (ce_per_pixel * pixel_w).sum() / n_effective
     dc = dice_loss_fn(predictions, safe_targets)
-    return 0.8 * ce + 0.2 * dc
+    return 0.7 * ce + 0.3 * dc
 
 
 def build_model():
