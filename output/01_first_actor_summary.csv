@@ -1,5 +1,0 @@
-country,first_actor,total_events,total_fatalities,active_from,active_to,temporal_pattern,n_clusters,buffered_area_km2,lcs_pct,concentration_label
-Ecuador,Unidentified Gang (Ecuador),7619,9179,2019-08-22,2026-04-17,Escalating,158,30106.29,37.9,Mixed
-Myanmar,Military Forces of Myanmar (2021-),42827,31250,2021-02-01,2026-04-17,Escalating,457,217496.47,45.7,Mixed
-Nigeria,Protesters (Nigeria),8792,161,1997-01-15,2026-04-16,Escalating,532,72238.9,14.8,Dispersed
-Somalia,Al Shabaab,19590,28599,2006-08-26,2026-04-17,Escalating,385,51497.93,50.0,Mixed
