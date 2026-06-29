@@ -21,7 +21,7 @@
 # | 1 | ACLED == Wiki (agree) | that side | `agree` |
 # | 2 | Wiki = contested, ACLED has clear side | ACLED side | `wiki_contested_use_acled` |
 # | 3 | ACLED ≠ Wiki, Wiki NOT changed within ±1 month | ACLED side | `disagree_stable_wiki_use_acled` |
-# | 4 | ACLED ≠ Wiki, Wiki DID change within ±1 month | Wiki side | `disagree_recent_wiki_use_wiki` |
+# | 4 | ACLED ≠ Wiki, Wiki DID change within ±1 month | Wiki side | `disagree_recent_wiki_use_wiki` |   
 # | 5 | ACLED has control signals from both sides | `uncertain` | `acled_mixed` |
 # 
 # **Output**: `data/processed/10_target_variable.parquet`

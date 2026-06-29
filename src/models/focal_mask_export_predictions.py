@@ -11,6 +11,8 @@
 # Output:
 #   models/focal_mask/predictions.csv
 
+import os
+import random
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -30,12 +32,27 @@ PREDICTIONS_PATH = OUT_DIR / 'predictions.csv'
 
 assert WEIGHTS_PATH.exists(), f'Weights not found: {WEIGHTS_PATH}'
 
+# ── Reproducibility (must match focal_mask_train.py exactly) ─────────────────
+SEED = 20269999
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
+if hasattr(torch.backends, 'mps'):
+    torch.mps.manual_seed(SEED) if hasattr(torch.mps, 'manual_seed') else None
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark     = False
+os.environ['PYTHONHASHSEED'] = str(SEED)
+
 # ── Config (must match focal_mask_train.py exactly) ───────────────────────────
-TRAIN_CUTOFF    = '2025-06'
-NEIGHBOR_RADIUS = 1
-NUM_CLASSES     = 3
-ENCODER_NAME    = 'resnet34'
-ENCODER_WEIGHTS = 'imagenet'
+TRAIN_CUTOFF     = '2025-09'
+NEIGHBOR_RADIUS  = 1
+FOCAL_OUT_WEIGHT = 0.0   # weight applied to non-focal pixels in CE loss
+CE_WEIGHT        = 0.7   # combined_loss = 0.7 * CE + 0.3 * Dice (training only)
+DICE_WEIGHT      = 0.3
+NUM_CLASSES      = 3
+ENCODER_NAME     = 'resnet34'
+ENCODER_WEIGHTS  = 'imagenet'
 
 INPUT_FEATURES = [
     'total_events', 'total_fatalities', 'events_gov', 'events_nug',
