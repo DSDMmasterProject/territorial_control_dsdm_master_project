@@ -33,7 +33,7 @@ import segmentation_models_pytorch as smp
 from pathlib import Path
 from scipy.ndimage import binary_dilation
 from sklearn.cluster import KMeans
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from torch.utils.data import Dataset, DataLoader
 
 # ── Reproducibility ───────────────────────────────────────────────────────────
@@ -310,27 +310,62 @@ def build_fold_masks(fold_id):
 
 
 def get_metrics(model, X_v, y_v, mask_v):
-    """Evaluate model on val months; restricted to cells in mask_v."""
+    """Evaluate model on val months; restricted to cells in mask_v.
+
+    Returns accuracy, macro/per-class F1, and macro/per-class OVR AUC.
+    AUC is NaN for any class absent in the evaluated subset.
+    """
     model.eval()
-    yt_all, yp_all = [], []
+    yt_all, yp_all, yproba_list = [], [], []
     ds = MyanmarDataset(X_v, y_v, mask_v, augment=False)
     with torch.no_grad():
         for i in range(len(ds)):
             x, y, m = ds[i]
-            preds = model(x.unsqueeze(0).to(DEVICE)).argmax(dim=1).squeeze(0).cpu().numpy()
-            yt_all.extend(y.numpy()[m.numpy() == 1].astype(int).tolist())
-            yp_all.extend(preds[m.numpy() == 1].tolist())
+            logits = model(x.unsqueeze(0).to(DEVICE))            # (1, 3, H, W)
+            probs  = torch.softmax(logits, dim=1).squeeze(0).cpu().numpy()  # (3, H, W)
+            preds  = logits.argmax(dim=1).squeeze(0).cpu().numpy()          # (H, W)
+            mask   = m.numpy() == 1
+            valid_proba = probs[:, mask].T                        # (n_cells, 3)
+            yt_all.extend(y.numpy()[mask].astype(int).tolist())
+            yp_all.extend(preds[mask].tolist())
+            if valid_proba.shape[0] > 0:
+                yproba_list.append(valid_proba)
+
     if len(yt_all) == 0:
         return None
-    yt = np.array(yt_all); yp = np.array(yp_all)
-    per = f1_score(yt, yp, average=None, zero_division=0, labels=[0, 1, 2])
+
+    yt     = np.array(yt_all)
+    yp     = np.array(yp_all)
+    yproba = np.vstack(yproba_list)                               # (N, 3)
+
+    per_f1 = f1_score(yt, yp, average=None, zero_division=0, labels=[0, 1, 2])
+
+    # Per-class OVR AUC — NaN when a class has no positives in this subset
+    cls_names = ["gov", "opo", "unc"]
+    auc_vals  = []
+    auc_per   = {}
+    for i, cls in enumerate(cls_names):
+        y_bin = (yt == i).astype(int)
+        if y_bin.sum() == 0:
+            v = float("nan")
+        else:
+            try:
+                v = float(roc_auc_score(y_bin, yproba[:, i]))
+            except ValueError:
+                v = float("nan")
+        auc_per[f"{cls}_auc"] = round(v, 4) if not np.isnan(v) else float("nan")
+        auc_vals.append(v)
+    macro_auc = float(np.nanmean(auc_vals))
+
     return dict(
-        n        = len(yt),
-        accuracy = round(float(accuracy_score(yt, yp)), 4),
-        macro_f1 = round(float(f1_score(yt, yp, average="macro", zero_division=0)), 4),
-        gov_f1   = round(float(per[0]), 4),
-        opo_f1   = round(float(per[1]), 4),
-        unc_f1   = round(float(per[2]), 4),
+        n         = len(yt),
+        accuracy  = round(float(accuracy_score(yt, yp)), 4),
+        macro_f1  = round(float(f1_score(yt, yp, average="macro", zero_division=0)), 4),
+        gov_f1    = round(float(per_f1[0]), 4),
+        opo_f1    = round(float(per_f1[1]), 4),
+        unc_f1    = round(float(per_f1[2]), 4),
+        macro_auc = round(macro_auc, 4) if not np.isnan(macro_auc) else float("nan"),
+        **auc_per,
     )
 
 
@@ -444,14 +479,27 @@ for fold_id in range(N_FOLDS):
 
     res_nh = get_metrics(model, X_val, y_val, m_v)
     res_h  = get_metrics(model, X_val, y_val, m_h)
-    delta  = round(res_h["macro_f1"] - res_nh["macro_f1"], 4) if res_nh and res_h else None
+    delta_f1  = round(res_h["macro_f1"]  - res_nh["macro_f1"],  4) if res_nh and res_h else None
+    _nh_auc = res_nh.get("macro_auc", float("nan")) if res_nh else float("nan")
+    _h_auc  = res_h.get("macro_auc",  float("nan")) if res_h  else float("nan")
+    delta_auc = (round(_h_auc - _nh_auc, 4)
+                 if (not np.isnan(_nh_auc) and not np.isnan(_h_auc))
+                 else float("nan"))
 
     elapsed = (time.time() - t0) / 60
+
+    def _fmt_auc(v):
+        return f"{v:.3f}" if not np.isnan(v) else "n/a"
+
     print(f"\n  Non-holdout: acc={res_nh['accuracy']:.3f}  F1={res_nh['macro_f1']:.3f}  "
-          f"[gov={res_nh['gov_f1']:.3f} opo={res_nh['opo_f1']:.3f} unc={res_nh['unc_f1']:.3f}]")
+          f"[gov={res_nh['gov_f1']:.3f} opo={res_nh['opo_f1']:.3f} unc={res_nh['unc_f1']:.3f}]"
+          f"  AUC={_fmt_auc(_nh_auc)}")
     print(f"  Holdout:     acc={res_h['accuracy']:.3f}  F1={res_h['macro_f1']:.3f}  "
-          f"[gov={res_h['gov_f1']:.3f} opo={res_h['opo_f1']:.3f} unc={res_h['unc_f1']:.3f}]")
-    print(f"  Δ macro F1:  {delta:+.4f}  |  time: {elapsed:.1f} min")
+          f"[gov={res_h['gov_f1']:.3f} opo={res_h['opo_f1']:.3f} unc={res_h['unc_f1']:.3f}]"
+          f"  AUC={_fmt_auc(_h_auc)}")
+    _dauc_s = f"{delta_auc:+.4f}" if not np.isnan(delta_auc) else "n/a"
+    print(f"  Δ macro F1:  {delta_f1:+.4f}  Δ macro AUC: {_dauc_s}"
+          f"  |  time: {elapsed:.1f} min")
 
     row = {
         "model":           "focal_mask_production",
@@ -462,7 +510,8 @@ for fold_id in range(N_FOLDS):
     }
     for k, v in (res_nh or {}).items(): row[f"nh_{k}"] = v
     for k, v in (res_h  or {}).items(): row[f"h_{k}"]  = v
-    row["delta_macro_f1"] = delta
+    row["delta_macro_f1"]  = delta_f1
+    row["delta_macro_auc"] = delta_auc
     all_results.append(row)
 
     # Clean up fold checkpoint to save disk space
@@ -481,16 +530,41 @@ print(f"SPATIAL CV COMPLETE — {N_FOLDS} folds  |  {total_min:.1f} min total")
 print(f"Results saved → {OUT_CSV}")
 print("="*60)
 
-nh_mean = df["nh_macro_f1"].mean(); nh_std = df["nh_macro_f1"].std()
-h_mean  = df["h_macro_f1"].mean();  h_std  = df["h_macro_f1"].std()
-d_mean  = df["delta_macro_f1"].mean()
+nh_f1_mean = df["nh_macro_f1"].mean();  nh_f1_std = df["nh_macro_f1"].std()
+h_f1_mean  = df["h_macro_f1"].mean();   h_f1_std  = df["h_macro_f1"].std()
+d_f1_mean  = df["delta_macro_f1"].mean()
 
-print(f"\n  Non-holdout macro F1:  {nh_mean:.3f} ± {nh_std:.3f}")
-print(f"  Holdout     macro F1:  {h_mean:.3f} ± {h_std:.3f}")
-print(f"  Δ (H − NH)  macro F1: {d_mean:+.3f}  ← geographic generalisation gap")
+nh_auc_mean = df["nh_macro_auc"].mean(); nh_auc_std = df["nh_macro_auc"].std()
+h_auc_mean  = df["h_macro_auc"].mean();  h_auc_std  = df["h_macro_auc"].std()
+d_auc_mean  = df["delta_macro_auc"].mean()
 
-print(f"\n  Per-fold holdout F1:")
+print(f"\n  Non-holdout macro F1:  {nh_f1_mean:.3f} ± {nh_f1_std:.3f}")
+print(f"  Holdout     macro F1:  {h_f1_mean:.3f} ± {h_f1_std:.3f}")
+print(f"  Δ (H − NH)  macro F1: {d_f1_mean:+.3f}  ← geographic generalisation gap")
+print(f"\n  Non-holdout macro AUC: {nh_auc_mean:.3f} ± {nh_auc_std:.3f}")
+print(f"  Holdout     macro AUC: {h_auc_mean:.3f} ± {h_auc_std:.3f}")
+print(f"  Δ (H − NH)  macro AUC: {d_auc_mean:+.3f}")
+
+# Report any AUC NaN (class absent in that fold/subset)
+_nan_report = []
+for prefix, label in [("nh", "non-holdout"), ("h", "holdout")]:
+    for cls in ["gov", "opo", "unc"]:
+        col = f"{prefix}_{cls}_auc"
+        if col in df.columns:
+            nan_folds = df[df[col].isna()]["fold"].tolist()
+            if nan_folds:
+                _nan_report.append(f"    {label}/{cls}: fold(s) {nan_folds}")
+if _nan_report:
+    print("\n  AUC NaN — class absent in that fold/subset:")
+    for s in _nan_report:
+        print(s)
+else:
+    print("\n  AUC NaN: none — all classes present in every fold subset")
+
+print(f"\n  Per-fold holdout F1 + AUC:")
 for _, row in df.iterrows():
+    auc_h = row.get("h_macro_auc", float("nan"))
+    auc_s = f"{auc_h:.3f}" if not pd.isna(auc_h) else "n/a"
     print(f"    Fold {int(row['fold'])}  blocks {row['holdout_blocks']:<12}  "
           f"NH={row['nh_macro_f1']:.3f}  H={row['h_macro_f1']:.3f}  "
-          f"Δ={row['delta_macro_f1']:+.3f}")
+          f"Δ={row['delta_macro_f1']:+.3f}  H_AUC={auc_s}")
