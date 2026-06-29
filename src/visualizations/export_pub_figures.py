@@ -50,7 +50,7 @@ LABEL_MAP   = {"gov": 0, "opo": 1, "uncertain": 2}
 
 # Two-line titles prevent panel-title collision at 6.5in figure width
 MODEL_LABELS = {
-    "focal_mask"        : "Focal Mask",
+    "focal_mask"        : "U-net",
     "random_proportion" : "Random\n(proportional)",
     "no_change"         : "No-change\n(persistence)",
 }
